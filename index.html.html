@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión Agrícola</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c5530 0%, #4a7c59 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #2c5530;
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .user-info {
+            text-align: center;
+            padding: 10px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .sync-status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .sync-online {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .sync-offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #2c5530;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-btn:hover, .tab-btn.active {
+            background: #4a7c59;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .tab-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        
+        .form-col {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #2c5530;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #4a7c59;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #4a7c59, #2c5530);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #ffc107, #ff9800);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .data-table th, .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c5530;
+        }
+        
+        .alert {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        
+        .success-msg {
+            background: linear-gradient(45deg, #4a7c59, #2c5530);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        
+        .calculator {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .days-counter {
+            background: #e7f3ff;
+            border: 2px solid #2196F3;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        
+        .zafra-card {
+            background: white;
+            border: 2px solid #4a7c59;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .zafra-active {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+        
+        .zafra-closed {
+            border-color: #dc3545;
+            background: #fff5f5;
+            opacity: 0.8;
+        }
+        
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-container h2 {
+            text-align: center;
+            color: #2c5530;
+            margin-bottom: 30px;
+        }
+        
+        .historial-fumigacion {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+            .nav-tabs {
+                flex-direction: column;
+            }
+            .tab-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <h2>🌾 Sistema Agrícola</h2>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="loginEmail" placeholder="fincafamilia@gmail.com">
+        </div>
+        <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="loginPassword" placeholder="••••••••">
+        </div>
+        <button class="btn" onclick="loginUser()" style="width: 100%">Iniciar Sesión</button>
+        <button class="btn btn-warning" onclick="registerUser()" style="width: 100%; margin-top: 10px">Registrarse</button>
+        <div id="loginError" style="color: red; margin-top: 10px; text-align: center;"></div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" style="display: none;">
+        <div class="container">
+            <div class="header">
+                <h1>🌾 Sistema de Gestión Agrícola</h1>
+                <div class="user-info">
+                    👤 Usuario: <span id="currentUser"></span>
+                    <button class="btn btn-danger" onclick="logoutUser()" style="margin-left: 10px; padding: 5px 15px;">Cerrar Sesión</button>
+                </div>
+                <div class="sync-status sync-online" id="syncStatus">
+                    🟢 Sincronizado con Firebase
+                </div>
+            </div>
+
+            <div class="nav-tabs">
+                <button class="tab-btn active" onclick="showTab('zafras')">🌱 Zafras</button>
+                <button class="tab-btn" onclick="showTab('parcelas')">📍 Parcelas</button>
+                <button class="tab-btn" onclick="showTab('fumigacion')">🚜 Fumigación</button>
+                <button class="tab-btn" onclick="showTab('siembra')">🌾 Siembra</button>
+                <button class="tab-btn" onclick="showTab('cosecha')">📦 Cosecha</button>
+                <button class="tab-btn" onclick="showTab('insumos')">💊 Insumos</button>
+            </div>
+
+            <!-- TAB ZAFRAS -->
+            <div id="zafras" class="tab-content active">
+                <h2>🌱 Gestión de Zafras/Ciclos</h2>
+                
+                <h3>Crear Nueva Zafra</h3>
+                <form onsubmit="crearZafra(event)">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Parcela</label>
+                            <select id="parcelaZafra" required></select>
+                        </div>
+                        <div class="form-col">
+                            <label>Cultivo</label>
+                            <input type="text" id="cultivoZafra" required placeholder="Ej: Soja, Maíz">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Variedad</label>
+                            <input type="text" id="variedadZafra" required placeholder="Ej: NS 5959">
+                        </div>
+                        <div class="form-col">
+                            <label>Fecha de Germinación (Día 1)</label>
+                            <input type="date" id="fechaGerminacion" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Iniciar Zafra</button>
+                </form>
+
+                <h3 style="margin-top: 30px;">Zafras Activas</h3>
+                <div id="listaZafras"></div>
+            </div>
+
+            <!-- TAB PARCELAS -->
+            <div id="parcelas" class="tab-content">
+                <h2>📍 Gestión de Parcelas</h2>
+                <form onsubmit="guardarParcela(event)">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Nombre de la Parcela</label>
+                            <input type="text" id="nombreParcela" required placeholder="Ej: Lote 1">
+                        </div>
+                        <div class="form-col">
+                            <label>Hectáreas</label>
+                            <input type="number" id="hectareasParcela" step="0.01" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Guardar Parcela</button>
+                </form>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Hectáreas</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaParcelas"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB FUMIGACIÓN -->
+            <div id="fumigacion" class="tab-content">
+                <h2>🚜 Registro de Fumigación</h2>
+                
+                <form onsubmit="guardarFumigacion(event)">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Zafra Activa</label>
+                            <select id="zafraFumigacion" required onchange="actualizarDiasZafra()"></select>
+                        </div>
+                        <div class="form-col">
+                            <label>Fecha de Fumigación</label>
+                            <input type="date" id="fechaFumigacion" required onchange="actualizarDiasZafra()">
+                        </div>
+                    </div>
+                    
+                    <div class="days-counter" id="diasDesdeGerminacion">
+                        📅 Día del cultivo: --
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Producto</label>
+                            <select id="productoFumigacion" required></select>
+                        </div>
+                        <div class="form-col">
+                            <label>Cantidad por Hectárea</label>
+                            <input type="number" id="cantidadPorHa" step="0.01" required>
+                        </div>
+                        <div class="form-col">
+                            <label>Unidad</label>
+                            <select id="unidadFumigacion" required>
+                                <option value="ml">ml/ha</option>
+                                <option value="l">L/ha</option>
+                                <option value="gr">gr/ha</option>
+                                <option value="kg">kg/ha</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Tipo</label>
+                            <select id="tipoFumigacion" required>
+                                <option value="pre-siembra">Pre-siembra</option>
+                                <option value="pos-germinacion">Post-germinación</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="calculator">
+                        <h4>📊 Cantidad Total: <span id="cantidadTotal">0</span> <span id="unidadTotal"></span></h4>
+                        <h4>💰 Costo Total: $<span id="costoFumigacion">0</span></h4>
+                    </div>
+                    
+                    <button type="submit" class="btn">Registrar Fumigación</button>
+                </form>
+
+                <div class="historial-fumigacion">
+                    <h3>📋 Historial por Zafra</h3>
+                    <select id="zafraHistorial" onchange="cargarHistorialFumigacion()">
+                        <option value="">Seleccionar zafra</option>
+                    </select>
+                    <div id="historialContent"></div>
+                </div>
+            </div>
+
+            <!-- TAB SIEMBRA -->
+            <div id="siembra" class="tab-content">
+                <h2>🌾 Registro de Siembra</h2>
+                <form onsubmit="guardarSiembra(event)">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Zafra</label>
+                            <select id="zafraSiembra" required></select>
+                        </div>
+                        <div class="form-col">
+                            <label>Fecha de Siembra</label>
+                            <input type="date" id="fechaSiembra" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Cantidad de Semilla (kg/ha)</label>
+                            <input type="number" id="cantidadSemilla" step="0.01" required>
+                        </div>
+                        <div class="form-col">
+                            <label>Costo de Semilla</label>
+                            <input type="number" id="costoSemilla" step="0.01" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Registrar Siembra</button>
+                </form>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Zafra</th>
+                                <th>Fecha</th>
+                                <th>Cant. Semilla</th>
+                                <th>Costo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaSiembras"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB COSECHA -->
+            <div id="cosecha" class="tab-content">
+                <h2>📦 Registro de Cosecha</h2>
+                <form onsubmit="guardarCosecha(event)">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Zafra a Cosechar</label>
+                            <select id="zafraCosecha" required></select>
+                        </div>
+                        <div class="form-col">
+                            <label>Fecha de Cosecha</label>
+                            <input type="date" id="fechaCosecha" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Rendimiento (kg/ha)</label>
+                            <input type="number" id="rendimientoCosecha" step="0.01" required>
+                        </div>
+                        <div class="form-col">
+                            <label>Humedad (%)</label>
+                            <input type="number" id="humedadCosecha" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="cerrarZafra">
+                            Cerrar esta zafra (marcar al finalizar el ciclo)
+                        </label>
+                    </div>
+                    <button type="submit" class="btn">Registrar Cosecha</button>
+                </form>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Zafra</th>
+                                <th>Fecha</th>
+                                <th>Rendimiento</th>
+                                <th>Humedad</th>
+                                <th>Total kg</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaCosechas"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB INSUMOS -->
+            <div id="insumos" class="tab-content">
+                <h2>💊 Gestión de Insumos</h2>
+                
+                <h3>Productos de Fumigación</h3>
+                <form onsubmit="guardarProducto(event)">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <input type="text" id="nombreProducto" placeholder="Nombre del producto" required>
+                        </div>
+                        <div class="form-col">
+                            <input type="number" id="precioProducto" placeholder="Precio por unidad" step="0.01" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Agregar Producto</button>
+                </form>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Producto</th><th>Precio</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="listaProductos"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAu8v9vGYDM7IQ9NX4u9JFuTQayn3nUrZY",
+            authDomain: "gestion-agricola-7fa6d.firebaseapp.com",
+            projectId: "gestion-agricola-7fa6d",
+            storageBucket: "gestion-agricola-7fa6d.firebasestorage.app",
+            messagingSenderId: "377995556451",
+            appId: "1:377995556451:web:22b8765aa7e623454c6a56"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let currentUser = null;
+
+        // Sistema de autenticación
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                document.getElementById('currentUser').textContent = user.email;
+                cargarDatos();
+            } else {
+                document.getElementById('loginScreen').style.display = 'block';
+                document.getElementById('mainApp').style.display = 'none';
+            }
+        });
+
+        async function loginUser() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (error) {
+                document.getElementById('loginError').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function registerUser() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                await auth.createUserWithEmailAndPassword(email, password);
+            } catch (error) {
+                document.getElementById('loginError').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function logoutUser() {
+            auth.signOut();
+        }
+
+        // Función para cambiar tabs
+        function showTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Cargar todos los datos
+        async function cargarDatos() {
+            await cargarParcelas();
+            await cargarProductos();
+            await cargarZafras();
+            await cargarSiembras();
+            await cargarCosechas();
+            poblarSelects();
+        }
+
+        // PARCELAS
+        async function guardarParcela(event) {
+            event.preventDefault();
+            const nombre = document.getElementById('nombreParcela').value;
+            const hectareas = parseFloat(document.getElementById('hectareasParcela').value);
+            
+            try {
+                await db.collection('parcelas').add({
+                    nombre,
+                    hectareas,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    userId: currentUser.uid
+                });
+                
+                document.getElementById('nombreParcela').value = '';
+                document.getElementById('hectareasParcela').value = '';
+                
+                await cargarParcelas();
+                poblarSelects();
+                mostrarMensaje('Parcela guardada correctamente');
+            } catch (error) {
+                alert('Error al guardar: ' + error.message);
+            }
+        }
+
+        async function cargarParcelas() {
+            const snapshot = await db.collection('parcelas')
+                .where('userId', '==', currentUser.uid)
+                .get();
+            
+            const tbody = document.getElementById('listaParcelas');
+            tbody.innerHTML = '';
+            
+            snapshot.forEach(doc => {
+                const parcela = doc.data();
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${parcela.nombre}</td>
+                    <td>${parcela.hectareas}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="eliminarParcela('${doc.id}')">Eliminar</button>
+                    </td>
+                `;
+            });
+        }
+
+        async function eliminarParcela(id) {
+            if (confirm('¿Eliminar esta parcela?')) {
+                await db.collection('parcelas').doc(id).delete();
+                await cargarParcelas();
+                poblarSelects();
+            }
+        }
+
+        // PRODUCTOS
+        async function guardarProducto(event) {
+            event.preventDefault();
+            const nombre = document.getElementById('nombreProducto').value;
+            const precio = parseFloat(document.getElementById('precioProducto').value);
+            
+            await db.collection('productos').add({
+                nombre,
+                precio,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userId: currentUser.uid
+            });
+            
+            document.getElementById('nombreProducto').value = '';
+            document.getElementById('precioProducto').value = '';
+            
+            await cargarProductos();
+            poblarSelects();
+            mostrarMensaje('Producto guardado');
+        }
+
+        async function cargarProductos() {
+            const snapshot = await db.collection('productos')
+                .where('userId', '==', currentUser.uid)
+                .get();
+            
+            const tbody = document.getElementById('listaProductos');
+            tbody.innerHTML = '';
+            
+            snapshot.forEach(doc => {
+                const producto = doc.data();
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${producto.nombre}</td>
+                    <td>$${producto.precio}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="eliminarProducto('${doc.id}')">Eliminar</button>
+                    </td>
+                `;
+            });
+        }
+
+        async function eliminarProducto(id) {
+            if (confirm('¿Eliminar este producto?')) {
+                await db.collection('productos').doc(id).delete();
+                await cargarProductos();
+                poblarSelects();
+            }
+        }
+
+        // ZAFRAS
+        async function crearZafra(event) {
+            event.preventDefault();
+            const parcelaId = document.getElementById('parcelaZafra').value;
+            const cultivo = document.getElementById('cultivoZafra').value;
+            const variedad = document.getElementById('variedadZafra').value;
+            const fechaGerminacion = document.getElementById('fechaGerminacion').value;
+            
+            const parcelaSnapshot = await db.collection('parcelas').doc(parcelaId).get();
+            const parcelaNombre = parcelaSnapshot.data().nombre;
+            const hectareas = parcelaSnapshot.data().hectareas;
+            
+            await db.collection('zafras').add({
+                parcelaId,
+                parcelaNombre,
+                hectareas,
+                cultivo,
+                variedad,
+                fechaGerminacion,
+                activa: true,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userId: currentUser.uid
+            });
+            
+            event.target.reset();
+            await cargarZafras();
+            poblarSelects();
+            mostrarMensaje('Zafra creada correctamente');
+        }
+
+        async function cargarZafras() {
+            const snapshot = await db.collection('zafras')
+                .where('userId', '==', currentUser.uid)
+                .orderBy('timestamp', 'desc')
+                .get();
+            
+            const container = document.getElementById('listaZafras');
+            container.innerHTML = '';
+            
+            snapshot.forEach(doc => {
+                const zafra = doc.data();
+                const fechaGerm = new Date(zafra.fechaGerminacion);
+                const hoy = new Date();
+                const diasCultivo = Math.floor((hoy - fechaGerm) / (1000 * 60 * 60 * 24));
+                
+                const card = document.createElement('div');
+                card.className = zafra.activa ? 'zafra-card zafra-active' : 'zafra-card zafra-closed';
+                card.innerHTML = `
+                    <h3>${zafra.activa ? '🟢' : '🔴'} ${zafra.parcelaNombre} - ${zafra.cultivo}</h3>
+                    <p><strong>Variedad:</strong> ${zafra.variedad}</p>
+                    <p><strong>Hectáreas:</strong> ${zafra.hectareas} ha</p>
+                    <p><strong>Germinación:</strong> ${new Date(zafra.fechaGerminacion).toLocaleDateString()}</p>
+                    <p><strong>Estado:</strong> ${zafra.activa ? 'Activa' : 'Cerrada'}</p>
+                    ${zafra.activa ? `<p class="days-counter">📅 Día ${diasCultivo} del cultivo</p>` : ''}
+                    ${zafra.activa ? `<button class="btn btn-danger" onclick="cerrarZafra('${doc.id}')">Cerrar Zafra</button>` : ''}
+                    <button class="btn btn-warning" onclick="verDetallesZafra('${doc.id}')">Ver Detalles</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function cerrarZafra(id) {
+            if (confirm('¿Cerrar esta zafra? No se podrá reabrir.')) {
+                await db.collection('zafras').doc(id).update({
+                    activa: false,
+                    fechaCierre: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                await cargarZafras();
+                poblarSelects();
+                mostrarMensaje('Zafra cerrada correctamente');
+            }
+        }
+
+        async function verDetallesZafra(id) {
+            const zafraDoc = await db.collection('zafras').doc(id).get();
+            const zafra = zafraDoc.data();
+            
+            // Cargar fumigaciones de esta zafra
+            const fumigaciones = await db.collection('fumigaciones')
+                .where('zafraId', '==', id)
+                .orderBy('fecha', 'asc')
+                .get();
+            
+            let detalles = `
+                <h3>${zafra.parcelaNombre} - ${zafra.cultivo} ${zafra.variedad}</h3>
+                <p><strong>Germinación:</strong> ${new Date(zafra.fechaGerminacion).toLocaleDateString()}</p>
+                <h4>Fumigaciones:</h4>
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Día</th><th>Fecha</th><th>Producto</th><th>Cant/ha</th><th>Total</th><th>Tipo</th></tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            fumigaciones.forEach(doc => {
+                const fum = doc.data();
+                detalles += `
+                    <tr>
+                        <td>Día ${fum.diaCultivo}</td>
+                        <td>${new Date(fum.fecha).toLocaleDateString()}</td>
+                        <td>${fum.producto}</td>
+                        <td>${fum.cantidadPorHa} ${fum.unidad}</td>
+                        <td>${fum.cantidadTotal} ${fum.unidad}</td>
+                        <td>${fum.tipo}</td>
+                    </tr>
+                `;
+            });
+            
+            detalles += `</tbody></table>`;
+            
+            const modal = window.open('', '_blank', 'width=800,height=600');
+            modal.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Detalles de Zafra</title>
+                    <style>
+                        body { font-family: Arial; padding: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background: #4a7c59; color: white; }
+                    </style>
+                </head>
+                <body>
+                    ${detalles}
+                    <button onclick="window.print()">Imprimir</button>
+                </body>
+                </html>
+            `);
+        }
+
+        // FUMIGACIÓN
+        async function actualizarDiasZafra() {
+            const zafraId = document.getElementById('zafraFumigacion').value;
+            const fechaFum = document.getElementById('fechaFumigacion').value;
+            
+            if (zafraId && fechaFum) {
+                const zafraDoc = await db.collection('zafras').doc(zafraId).get();
+                const zafra = zafraDoc.data();
+                
+                const fechaGerm = new Date(zafra.fechaGerminacion);
+                const fechaFumigacion = new Date(fechaFum);
+                const dias = Math.floor((fechaFumigacion - fechaGerm) / (1000 * 60 * 60 * 24));
+                
+                document.getElementById('diasDesdeGerminacion').innerHTML = `📅 Día ${dias} del cultivo`;
+            }
+        }
+
+        async function calcularCostoFumigacion() {
+            const zafraId = document.getElementById('zafraFumigacion').value;
+            const productoSelect = document.getElementById('productoFumigacion');
+            const cantidadPorHa = parseFloat(document.getElementById('cantidadPorHa').value || 0);
+            const unidad = document.getElementById('unidadFumigacion').value;
+            
+            if (zafraId && productoSelect.value && cantidadPorHa) {
+                const zafraDoc = await db.collection('zafras').doc(zafraId).get();
+                const hectareas = zafraDoc.data().hectareas;
+                
+                const cantidadTotal = cantidadPorHa * hectareas;
+                
+                const productoId = productoSelect.value;
+                const productoDoc = await db.collection('productos').doc(productoId).get();
+                const precio = productoDoc.data().precio;
+                
+                const costo = cantidadTotal * precio;
+                
+                document.getElementById('cantidadTotal').textContent = cantidadTotal.toFixed(2);
+                document.getElementById('unidadTotal').textContent = unidad;
+                document.getElementById('costoFumigacion').textContent = costo.toFixed(2);
+            }
+        }
+
+        async function guardarFumigacion(event) {
+            event.preventDefault();
+            
+            const zafraId = document.getElementById('zafraFumigacion').value;
+            const fecha = document.getElementById('fechaFumigacion').value;
+            const productoId = document.getElementById('productoFumigacion').value;
+            const cantidadPorHa = parseFloat(document.getElementById('cantidadPorHa').value);
+            const unidad = document.getElementById('unidadFumigacion').value;
+            const tipo = document.getElementById('tipoFumigacion').value;
+            
+            const zafraDoc = await db.collection('zafras').doc(zafraId).get();
+            const zafra = zafraDoc.data();
+            
+            const productoDoc = await db.collection('productos').doc(productoId).get();
+            const producto = productoDoc.data();
+            
+            const fechaGerm = new Date(zafra.fechaGerminacion);
+            const fechaFum = new Date(fecha);
+            const diaCultivo = Math.floor((fechaFum - fechaGerm) / (1000 * 60 * 60 * 24));
+            
+            const cantidadTotal = cantidadPorHa * zafra.hectareas;
+            const costo = cantidadTotal * producto.precio;
+            
+            await db.collection('fumigaciones').add({
+                zafraId,
+                parcelaNombre: zafra.parcelaNombre,
+                cultivo: zafra.cultivo,
+                fecha,
+                diaCultivo,
+                productoId,
+                producto: producto.nombre,
+                cantidadPorHa,
+                cantidadTotal,
+                unidad,
+                tipo,
+                costo,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userId: currentUser.uid
+            });
+            
+            event.target.reset();
+            document.getElementById('cantidadTotal').textContent = '0';
+            document.getElementById('costoFumigacion').textContent = '0';
+            document.getElementById('diasDesdeGerminacion').innerHTML = '📅 Día del cultivo: --';
+            
+            mostrarMensaje('Fumigación registrada correctamente');
+        }
+
+        async function cargarHistorialFumigacion() {
+            const zafraId = document.getElementById('zafraHistorial').value;
+            const content = document.getElementById('historialContent');
+            
+            if (!zafraId) {
+                content.innerHTML = '';
+                return;
+            }
+            
+            const zafraDoc = await db.collection('zafras').doc(zafraId).get();
+            const zafra = zafraDoc.data();
+            
+            const snapshot = await db.collection('fumigaciones')
+                .where('zafraId', '==', zafraId)
+                .orderBy('fecha', 'asc')
+                .get();
+            
+            let html = `
+                <h4>${zafra.parcelaNombre} - ${zafra.cultivo} ${zafra.variedad}</h4>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Día</th>
+                            <th>Fecha</th>
+                            <th>Producto</th>
+                            <th>Cant/ha</th>
+                            <th>Total</th>
+                            <th>Tipo</th>
+                            <th>Costo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            snapshot.forEach(doc => {
+                const fum = doc.data();
+                html += `
+                    <tr>
+                        <td>Día ${fum.diaCultivo}</td>
+                        <td>${new Date(fum.fecha).toLocaleDateString()}</td>
+                        <td>${fum.producto}</td>
+                        <td>${fum.cantidadPorHa} ${fum.unidad}</td>
+                        <td>${fum.cantidadTotal.toFixed(2)} ${fum.unidad}</td>
+                        <td>${fum.tipo}</td>
+                        <td>${fum.costo.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            content.innerHTML = html;
+        }
+
+        // SIEMBRA
+        async function guardarSiembra(event) {
+            event.preventDefault();
+            
+            const zafraId = document.getElementById('zafraSiembra').value;
+            const fecha = document.getElementById('fechaSiembra').value;
+            const cantidadSemilla = parseFloat(document.getElementById('cantidadSemilla').value);
+            const costoSemilla = parseFloat(document.getElementById('costoSemilla').value);
+            
+            const zafraDoc = await db.collection('zafras').doc(zafraId).get();
+            const zafra = zafraDoc.data();
+            
+            const costoTotal = cantidadSemilla * zafra.hectareas * costoSemilla;
+            
+            await db.collection('siembras').add({
+                zafraId,
+                parcelaNombre: zafra.parcelaNombre,
+                cultivo: zafra.cultivo,
+                fecha,
+                cantidadSemilla,
+                costoSemilla,
+                costoTotal,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userId: currentUser.uid
+            });
+            
+            event.target.reset();
+            await cargarSiembras();
+            mostrarMensaje('Siembra registrada correctamente');
+        }
+
+        async function cargarSiembras() {
+            const snapshot = await db.collection('siembras')
+                .where('userId', '==', currentUser.uid)
+                .orderBy('timestamp', 'desc')
+                .get();
+            
+            const tbody = document.getElementById('listaSiembras');
+            tbody.innerHTML = '';
+            
+            snapshot.forEach(doc => {
+                const siembra = doc.data();
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${siembra.parcelaNombre} - ${siembra.cultivo}</td>
+                    <td>${new Date(siembra.fecha).toLocaleDateString()}</td>
+                    <td>${siembra.cantidadSemilla} kg/ha</td>
+                    <td>${siembra.costoTotal.toFixed(2)}</td>
+                `;
+            });
+        }
+
+        // COSECHA
+        async function guardarCosecha(event) {
+            event.preventDefault();
+            
+            const zafraId = document.getElementById('zafraCosecha').value;
+            const fecha = document.getElementById('fechaCosecha').value;
+            const rendimiento = parseFloat(document.getElementById('rendimientoCosecha').value);
+            const humedad = parseFloat(document.getElementById('humedadCosecha').value);
+            const cerrar = document.getElementById('cerrarZafra').checked;
+            
+            const zafraDoc = await db.collection('zafras').doc(zafraId).get();
+            const zafra = zafraDoc.data();
+            
+            const totalKg = rendimiento * zafra.hectareas;
+            
+            await db.collection('cosechas').add({
+                zafraId,
+                parcelaNombre: zafra.parcelaNombre,
+                cultivo: zafra.cultivo,
+                fecha,
+                rendimiento,
+                humedad,
+                totalKg,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userId: currentUser.uid
+            });
+            
+            if (cerrar) {
+                await db.collection('zafras').doc(zafraId).update({
+                    activa: false,
+                    fechaCierre: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+            
+            event.target.reset();
+            await cargarCosechas();
+            await cargarZafras();
+            poblarSelects();
+            mostrarMensaje('Cosecha registrada correctamente');
+        }
+
+        async function cargarCosechas() {
+            const snapshot = await db.collection('cosechas')
+                .where('userId', '==', currentUser.uid)
+                .orderBy('timestamp', 'desc')
+                .get();
+            
+            const tbody = document.getElementById('listaCosechas');
+            tbody.innerHTML = '';
+            
+            snapshot.forEach(doc => {
+                const cosecha = doc.data();
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${cosecha.parcelaNombre} - ${cosecha.cultivo}</td>
+                    <td>${new Date(cosecha.fecha).toLocaleDateString()}</td>
+                    <td>${cosecha.rendimiento} kg/ha</td>
+                    <td>${cosecha.humedad}%</td>
+                    <td>${cosecha.totalKg.toFixed(0)} kg</td>
+                `;
+            });
+        }
+
+        // POBLAR SELECTS
+        async function poblarSelects() {
+            // Parcelas
+            const parcelasSnapshot = await db.collection('parcelas')
+                .where('userId', '==', currentUser.uid)
+                .get();
+            
+            const parcelaSelect = document.getElementById('parcelaZafra');
+            parcelaSelect.innerHTML = '<option value="">Seleccionar parcela</option>';
+            
+            parcelasSnapshot.forEach(doc => {
+                const parcela = doc.data();
+                parcelaSelect.innerHTML += `<option value="${doc.id}">${parcela.nombre} (${parcela.hectareas} ha)</option>`;
+            });
+            
+            // Productos
+            const productosSnapshot = await db.collection('productos')
+                .where('userId', '==', currentUser.uid)
+                .get();
+            
+            const productoSelect = document.getElementById('productoFumigacion');
+            productoSelect.innerHTML = '<option value="">Seleccionar producto</option>';
+            
+            productosSnapshot.forEach(doc => {
+                const producto = doc.data();
+                productoSelect.innerHTML += `<option value="${doc.id}">${producto.nombre} - ${producto.precio}</option>`;
+            });
+            
+            // Zafras activas
+            const zafrasSnapshot = await db.collection('zafras')
+                .where('userId', '==', currentUser.uid)
+                .where('activa', '==', true)
+                .get();
+            
+            const zafraSelects = ['zafraFumigacion', 'zafraSiembra', 'zafraCosecha', 'zafraHistorial'];
+            
+            zafraSelects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Seleccionar zafra</option>';
+                
+                zafrasSnapshot.forEach(doc => {
+                    const zafra = doc.data();
+                    select.innerHTML += `<option value="${doc.id}">${zafra.parcelaNombre} - ${zafra.cultivo} ${zafra.variedad}</option>`;
+                });
+            });
+        }
+
+        // Event listeners para cálculos en tiempo real
+        document.addEventListener('DOMContentLoaded', function() {
+            const productoFum = document.getElementById('productoFumigacion');
+            const cantidadPorHa = document.getElementById('cantidadPorHa');
+            const unidadFum = document.getElementById('unidadFumigacion');
+            const zafraFum = document.getElementById('zafraFumigacion');
+            
+            if (productoFum) productoFum.addEventListener('change', calcularCostoFumigacion);
+            if (cantidadPorHa) cantidadPorHa.addEventListener('input', calcularCostoFumigacion);
+            if (unidadFum) unidadFum.addEventListener('change', calcularCostoFumigacion);
+            if (zafraFum) zafraFum.addEventListener('change', calcularCostoFumigacion);
+        });
+
+        // Función para mostrar mensajes
+        function mostrarMensaje(mensaje) {
+            const existingMsg = document.querySelector('.success-msg');
+            if (existingMsg) existingMsg.remove();
+            
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-msg';
+            successDiv.textContent = mensaje;
+            
+            document.querySelector('.container').insertBefore(successDiv, document.querySelector('.nav-tabs'));
+            
+            setTimeout(() => successDiv.remove(), 3000);
+        }
+    </script>
+</body>
+</html>
